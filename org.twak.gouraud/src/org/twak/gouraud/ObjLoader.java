@@ -49,6 +49,7 @@ public class ObjLoader {
     int program;
     int vertexAttribute;
     int normalAttribute;
+    int colourAttribute;
     int modelMatrixUniform;
     int viewProjectionMatrixUniform;
     int normalMatrixUniform;
@@ -92,7 +93,7 @@ public class ObjLoader {
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
         window = glfwCreateWindow(width, height,
-                "Wavefront obj model loading with Assimp demo", NULL, NULL);
+                "Shading demo", NULL, NULL);
         if (window == NULL)
             throw new AssertionError("Failed to create the GLFW window");
 
@@ -185,12 +186,13 @@ public class ObjLoader {
     }
 
     void loadModel() {
-        String fileName = "C:\\Users\\twak\\Desktop\\magnet.obj";
+        String fileName = "C:\\Users\\twak\\Desktop\\untitled.obj";
 //        		Thread.currentThread().getContextClassLoader()
 //                .getResource("org/lwjgl/demo/opengl/assimp/magnet.obj").getFile();
         File file = new File(fileName);
         // Assimp will be able to find the corresponding mtl file if we call aiImportFile this way.
-        AIScene scene = aiImportFile(file.getAbsolutePath(), aiProcess_JoinIdenticalVertices | aiProcess_Triangulate);
+        AIScene scene = aiImportFile(file.getAbsolutePath(), 0 );
+//        AIScene scene = aiImportFile(file.getAbsolutePath(), aiProcess_JoinIdenticalVertices | aiProcess_Triangulate);
         if (scene == null) {
             throw new IllegalStateException(aiGetErrorString());
         }
@@ -237,10 +239,16 @@ public class ObjLoader {
         }
 
         glUseProgramObjectARB(program);
+        
         vertexAttribute = glGetAttribLocationARB(program, "aVertex");
         glEnableVertexAttribArrayARB(vertexAttribute);
+        
         normalAttribute = glGetAttribLocationARB(program, "aNormal");
         glEnableVertexAttribArrayARB(normalAttribute);
+        
+        colourAttribute = glGetAttribLocationARB(program, "aColour");
+        glEnableVertexAttribArrayARB(colourAttribute);
+        
         modelMatrixUniform = glGetUniformLocationARB(program, "uModelMatrix");
         viewProjectionMatrixUniform = glGetUniformLocationARB(program, "uViewProjectionMatrix");
         normalMatrixUniform = glGetUniformLocationARB(program, "uNormalMatrix");
@@ -250,6 +258,23 @@ public class ObjLoader {
         diffuseColorUniform = glGetUniformLocationARB(program, "uDiffuseColor");
         specularColorUniform = glGetUniformLocationARB(program, "uSpecularColor");
     }
+    
+    /*
+     *     float ambientStrength = 0.5;
+    float diffuseStrength = 0.5;
+    float specularStrength = 0.5;
+    float shininess = 4.0;
+    vec3 ambientColor = ambientStrength * uAmbientColor;
+    vec3 normal = normalize(vNormal);
+    vec3 lightDirection = normalize(uLightPosition - vPosition);
+    vec3 diffuseColor = diffuseStrength * max(0.0, dot(normal, lightDirection)) * uDiffuseColor;
+    vec3 viewDirection = normalize(uViewPosition - vPosition);
+    vec3 reflectDirection = reflect(-lightDirection, normal);
+    vec3 specularColor = specularStrength
+            * pow(max(dot(viewDirection, reflectDirection), 0.0), shininess) * uSpecularColor;
+            *     gl_FragColor = vec4(1,0,0,1);//ambientColor + diffuseColor + specularColor, 1.0);
+
+     */
 
     void update() {
         projectionMatrix.setPerspective((float) Math.toRadians(fov), (float) width / height, 0.01f,
@@ -268,8 +293,12 @@ public class ObjLoader {
 
             glBindBufferARB(GL_ARRAY_BUFFER_ARB, mesh.vertexArrayBuffer);
             glVertexAttribPointerARB(vertexAttribute, 3, GL_FLOAT, false, 0, 0);
+            
             glBindBufferARB(GL_ARRAY_BUFFER_ARB, mesh.normalArrayBuffer);
             glVertexAttribPointerARB(normalAttribute, 3, GL_FLOAT, false, 0, 0);
+            
+            glBindBufferARB(GL_ARRAY_BUFFER_ARB, mesh.colourArrayBuffer);
+            glVertexAttribPointerARB(colourAttribute, 3, GL_FLOAT, false, 0, 0);
 
             glUniformMatrix4fvARB(modelMatrixUniform, false, modelMatrix.get(modelMatrixBuffer));
             glUniformMatrix4fvARB(viewProjectionMatrixUniform, false,

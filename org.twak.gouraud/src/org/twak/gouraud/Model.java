@@ -15,6 +15,8 @@ import static org.lwjgl.opengl.ARBVertexBufferObject.glBufferDataARB;
 import static org.lwjgl.opengl.ARBVertexBufferObject.glGenBuffersARB;
 import static org.lwjgl.opengl.ARBVertexBufferObject.nglBufferDataARB;
 
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +29,7 @@ import org.lwjgl.assimp.AIMaterial;
 import org.lwjgl.assimp.AIMesh;
 import org.lwjgl.assimp.AIScene;
 import org.lwjgl.assimp.AIVector3D;
+import org.lwjgl.system.MemoryUtil;
 
 class Model {
 
@@ -65,6 +68,7 @@ class Model {
         public AIMesh mesh;
         public int vertexArrayBuffer;
         public int normalArrayBuffer;
+        public int colourArrayBuffer;
         public int elementArrayBuffer;
         public int elementCount;
 
@@ -82,11 +86,26 @@ class Model {
             AIVector3D.Buffer normals = mesh.mNormals();
             nglBufferDataARB(GL_ARRAY_BUFFER_ARB, AIVector3D.SIZEOF * normals.remaining(),
                     normals.address(), GL_STATIC_DRAW_ARB);
+            
+            colourArrayBuffer = glGenBuffersARB();
+            glBindBufferARB(GL_ARRAY_BUFFER_ARB, colourArrayBuffer);
+            ByteBuffer bb = ByteBuffer.allocateDirect(3600*4);
+            
+            FloatBuffer fb = bb.asFloatBuffer();
+            
+            for (int i = 0; i < fb.capacity(); i++)
+            	fb.put((float)Math.random());
+            
+            glBufferDataARB(GL_ARRAY_BUFFER_ARB, bb, GL_STATIC_DRAW_ARB);
+//            nglBufferDataARB(GL_ARRAY_BUFFER_ARB, AIVector3D.SIZEOF * 24,  MemoryUtil.getAddress(fb), GL_STATIC_DRAW_ARB);
 
+//            PointerBuffer colours =  PointerBuffer.allocateDirect(capacity) mesh.mColors();//mNormals();
+            
             int faceCount = mesh.mNumFaces();
             elementCount = faceCount * 3;
             IntBuffer elementArrayBufferData = BufferUtils.createIntBuffer(elementCount);
             AIFace.Buffer facesBuffer = mesh.mFaces();
+            
             for (int i = 0; i < faceCount; ++i) {
                 AIFace face = facesBuffer.get(i);
                 if (face.mNumIndices() != 3) {
@@ -94,11 +113,11 @@ class Model {
                 }
                 elementArrayBufferData.put(face.mIndices());
             }
+            
             elementArrayBufferData.flip();
             elementArrayBuffer = glGenBuffersARB();
             glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, elementArrayBuffer);
-            glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, elementArrayBufferData,
-                    GL_STATIC_DRAW_ARB);
+            glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, elementArrayBufferData, GL_STATIC_DRAW_ARB);
         }
     }
 
