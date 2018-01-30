@@ -89,16 +89,18 @@ class Model {
             
             colourArrayBuffer = glGenBuffersARB();
             glBindBufferARB(GL_ARRAY_BUFFER_ARB, colourArrayBuffer);
-            ByteBuffer bb = ByteBuffer.allocateDirect(3600*4);
             
-            FloatBuffer fb = bb.asFloatBuffer();
+            float[] colors = new float[vertices.remaining() * 3 * 4];
             
-            for (int i = 0; i < fb.capacity(); i++)
-            	fb.put((float)Math.random());
+            for (int i = 0; i < colors.length; i++)
+            		colors[i] = (float)Math.random();
             
-            glBufferDataARB(GL_ARRAY_BUFFER_ARB, bb, GL_STATIC_DRAW_ARB);
+            FloatBuffer colorsBuffer = BufferUtils.createFloatBuffer(colors.length);
+            colorsBuffer.put(colors);
+            colorsBuffer.flip();
+            
+            glBufferDataARB(GL_ARRAY_BUFFER_ARB, colorsBuffer, GL_STATIC_DRAW_ARB);
 //            nglBufferDataARB(GL_ARRAY_BUFFER_ARB, AIVector3D.SIZEOF * 24,  MemoryUtil.getAddress(fb), GL_STATIC_DRAW_ARB);
-
 //            PointerBuffer colours =  PointerBuffer.allocateDirect(capacity) mesh.mColors();//mNormals();
             
             int faceCount = mesh.mNumFaces();
