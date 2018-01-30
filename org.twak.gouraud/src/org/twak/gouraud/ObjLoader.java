@@ -20,7 +20,6 @@ import java.nio.IntBuffer;
 
 import static org.lwjgl.assimp.Assimp.*;
 import static org.twak.gouraud.DemoUtils.*;
-//import static org.lwjgl.demo.opengl.util.DemoUtils.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.ARBFragmentShader.*;
 import static org.lwjgl.opengl.ARBShaderObjects.*;
@@ -50,7 +49,8 @@ public class ObjLoader {
 	int normalAttribute;
 	int colourAttribute;
 	int modelMatrixUniform;
-	int viewProjectionMatrixUniform;
+	int viewMatrixUniform;
+	int projectionMatrixUniform;
 	int normalMatrixUniform;
 	int lightPositionUniform;
 	int viewPositionUniform;
@@ -61,14 +61,15 @@ public class ObjLoader {
 	Model model;
 
 	Matrix4f modelMatrix = new Matrix4f().rotateY(0.5f * (float) Math.PI).scale(1.5f, 1.5f, 1.5f);
-	Matrix4f viewMatrix = new Matrix4f();
 	Matrix4f projectionMatrix = new Matrix4f();
-	Matrix4f viewProjectionMatrix = new Matrix4f();
+	Matrix4f viewMatrix = new Matrix4f();
+	Matrix4f projectMatrix = new Matrix4f();
 	Vector3f viewPosition = new Vector3f();
 	Vector3f lightPosition = new Vector3f(-5f, 5f, 5f);
 
 	private FloatBuffer modelMatrixBuffer = BufferUtils.createFloatBuffer(4 * 4);
-	private FloatBuffer viewProjectionMatrixBuffer = BufferUtils.createFloatBuffer(4 * 4);
+	private FloatBuffer viewMatrixBuffer = BufferUtils.createFloatBuffer(4 * 4);
+	private FloatBuffer projectionMatrixBuffer = BufferUtils.createFloatBuffer(4 * 4);
 	private Matrix3f normalMatrix = new Matrix3f();
 	private FloatBuffer normalMatrixBuffer = BufferUtils.createFloatBuffer(3 * 3);
 	private FloatBuffer lightPositionBuffer = BufferUtils.createFloatBuffer(3);
@@ -81,6 +82,12 @@ public class ObjLoader {
 	GLFWCursorPosCallback cpCallback;
 	GLFWScrollCallback sCallback;
 	Callback debugProc;
+
+	String shader;
+
+	public ObjLoader(String shader) {
+		this.shader = shader;
+	}
 
 	void init() throws IOException {
 
@@ -182,17 +189,12 @@ public class ObjLoader {
 
 	void loadModel() {
 		String fileName = "C:\\Users\\twak\\Desktop\\magnet.obj";
-		// Thread.currentThread().getContextClassLoader()
-		// .getResource("org/lwjgl/demo/opengl/assimp/magnet.obj").getFile();
 		File file = new File(fileName);
-		// Assimp will be able to find the corresponding mtl file if we call
-		// aiImportFile this way.
-		AIScene scene = aiImportFile(file.getAbsolutePath(), aiProcess_JoinIdenticalVertices | aiProcess_Triangulate );
-		// AIScene scene = aiImportFile(file.getAbsolutePath(),
-		// );
-		if (scene == null) {
+		AIScene scene = aiImportFile(file.getAbsolutePath(), aiProcess_JoinIdenticalVertices | aiProcess_Triangulate);
+		
+		if (scene == null)
 			throw new IllegalStateException(aiGetErrorString());
-		}
+
 		model = new Model(scene);
 	}
 
@@ -219,8 +221,8 @@ public class ObjLoader {
 	void createProgram() throws IOException {
 
 		program = glCreateProgramObjectARB();
-		int vertexShader = createShader("gouraud.vs", GL_VERTEX_SHADER_ARB);
-		int fragmentShader = createShader("gouraud.fs", GL_FRAGMENT_SHADER_ARB);
+		int vertexShader = createShader(shader + ".vs", GL_VERTEX_SHADER_ARB);
+		int fragmentShader = createShader(shader + ".fs", GL_FRAGMENT_SHADER_ARB);
 		glAttachObjectARB(program, vertexShader);
 		glAttachObjectARB(program, fragmentShader);
 		glLinkProgramARB(program);
@@ -238,22 +240,27 @@ public class ObjLoader {
 		vertexAttribute = glGetAttribLocationARB(program, "aVertex");
 		glEnableVertexAttribArrayARB(vertexAttribute);
 
-//		normalAttribute = glGetAttribLocationARB(program, "aNormal");
-//		glEnableVertexAttribArrayARB(normalAttribute);
+		normalAttribute = glGetAttribLocationARB(program, "aNormal");
+		if (normalAttribute != GL_NO_ERROR)
+			glEnableVertexAttribArrayARB(normalAttribute);
 
 		colourAttribute = glGetAttribLocationARB(program, "aColour");
-		glEnableVertexAttribArrayARB(colourAttribute);
+		if (colourAttribute != GL_NO_ERROR)
+			glEnableVertexAttribArrayARB(colourAttribute);
 
 		modelMatrixUniform = glGetUniformLocationARB(program, "uModelMatrix");
-		viewProjectionMatrixUniform = glGetUniformLocationARB(program, "uViewProjectionMatrix");
-//		normalMatrixUniform = glGetUniformLocationARB(program, "uNormalMatrix");
+
+		viewMatrixUniform = glGetUniformLocationARB(program, "uViewMatrix");
+		projectionMatrixUniform = glGetUniformLocationARB(program, "uProjectionMatrix");
+		normalMatrixUniform = glGetUniformLocationARB(program, "uNormalMatrix");
+		lightPositionUniform = glGetUniformLocationARB(program, "uLightPosition");
+		viewPositionUniform = glGetUniformLocationARB(program, "uViewPosition");
 	}
 
 	void update() {
 		projectionMatrix.setPerspective((float) Math.toRadians(fov), (float) width / height, 0.01f, 100.0f);
 		viewPosition.set(10f * (float) Math.cos(rotation), 10f, 10f * (float) Math.sin(rotation));
 		viewMatrix.setLookAt(viewPosition.x, viewPosition.y, viewPosition.z, 0f, 0f, 0f, 0f, 1f, 0f);
-		projectionMatrix.mul(viewMatrix, viewProjectionMatrix);
 	}
 
 	void render() {
@@ -265,17 +272,30 @@ public class ObjLoader {
 			glBindBufferARB(GL_ARRAY_BUFFER_ARB, mesh.vertexArrayBuffer);
 			glVertexAttribPointerARB(vertexAttribute, 3, GL_FLOAT, false, 0, 0);
 
-//			glBindBufferARB(GL_ARRAY_BUFFER_ARB, mesh.normalArrayBuffer);
-//			glVertexAttribPointerARB(normalAttribute, 3, GL_FLOAT, false, 0, 0);
+			if (normalAttribute != GL_NO_ERROR) {
+				glBindBufferARB(GL_ARRAY_BUFFER_ARB, mesh.normalArrayBuffer);
+				glVertexAttribPointerARB(normalAttribute, 3, GL_FLOAT, false, 0, 0);
+			}
 
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, mesh.colourArrayBuffer);
-			glVertexAttribPointerARB(colourAttribute, 3, GL_FLOAT, false, 0, 0);
+			if (colourAttribute != GL_NO_ERROR) {
+				glBindBufferARB(GL_ARRAY_BUFFER_ARB, mesh.colourArrayBuffer);
+				glVertexAttribPointerARB(colourAttribute, 3, GL_FLOAT, false, 0, 0);
+			}
 
 			glUniformMatrix4fvARB(modelMatrixUniform, false, modelMatrix.get(modelMatrixBuffer));
-			glUniformMatrix4fvARB(viewProjectionMatrixUniform, false, viewProjectionMatrix.get(viewProjectionMatrixBuffer));
+			glUniformMatrix4fvARB(viewMatrixUniform, false, viewMatrix.get(viewMatrixBuffer));
+			glUniformMatrix4fvARB(projectionMatrixUniform, false, projectionMatrix.get(projectionMatrixBuffer));
 
-//			normalMatrix.set(modelMatrix).invert().transpose();
+			normalMatrix.set(modelMatrix).invert().transpose();
 
+			glUniformMatrix3fvARB(normalMatrixUniform, false, normalMatrix.get(normalMatrixBuffer));
+
+			if (lightPositionUniform != GL_NO_ERROR)
+				glUniform3fvARB(lightPositionUniform, lightPosition.get(lightPositionBuffer));
+
+			if (viewPositionUniform != GL_NO_ERROR)
+				glUniform3fvARB(viewPositionUniform, viewPosition.get(viewPositionBuffer));
+			
 			glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, mesh.elementArrayBuffer);
 			glDrawElements(GL_TRIANGLES, mesh.elementCount, GL_UNSIGNED_INT, 0);
 		}
@@ -312,6 +332,8 @@ public class ObjLoader {
 	}
 
 	public static void main(String[] args) {
-		new ObjLoader().run();
+		// new ObjLoader("blue").run();
+		// new ObjLoader("gouraud").run();
+		new ObjLoader("gouraud_lit").run();
 	}
 }
