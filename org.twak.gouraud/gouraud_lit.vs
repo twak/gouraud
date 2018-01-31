@@ -13,18 +13,21 @@ uniform vec3 uLightPosition;
 out vec4 vColour;
 
 void main() {
+
     vec4 modelPosition = uModelMatrix * aVertex;
     vec4 viewPosition = uViewMatrix * modelPosition;
     gl_Position = uProjectionMatrix * viewPosition;
     
     vec4 viewDir = normalize ( viewPosition );
-    vec vNormal = vec4 ( uNormalMatrix * aNormal, 1);
+    vec4 vNormal = vec4 ( uNormalMatrix * aNormal, 1);
+    vec4 lightPosition = uModelMatrix * vec4 ( uLightPosition, 1);
+    vec4 lightDirection = normalize( lightPosition - viewPosition);
+    float diffuseCo = dot ( lightDirection, vNormal );
+    vec4 diffuse = diffuseCo * vec4 (1,0,0, 1);
     
-    vec4 diffuse =  dot ( viewDir, vec4 ( aNormal, 1 ) ) * vec4 (1,0,0, 1);
-    //vec4 specular = 
+    vec3 H = normalize (lightDirection.xyz + viewDir.xyz);
+    float specularCo = pow(max(0.0, dot(vNormal.xyz, H)), 3);
+    vec4 specular = specularCo * vec4 (1,1,1,1);
     
-    LightPosition = vec3(view * vec4(lightPosition, 1.0));
-    
-    
-    vColour = diffuse;// + specular;
+    vColour = diffuse + specular;
 }

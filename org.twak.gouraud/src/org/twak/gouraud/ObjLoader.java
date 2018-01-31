@@ -65,7 +65,7 @@ public class ObjLoader {
 	Matrix4f viewMatrix = new Matrix4f();
 	Matrix4f projectMatrix = new Matrix4f();
 	Vector3f viewPosition = new Vector3f();
-	Vector3f lightPosition = new Vector3f(-5f, 5f, 5f);
+	Vector3f lightPosition = new Vector3f(-5f, 0f, 0f);
 
 	private FloatBuffer modelMatrixBuffer = BufferUtils.createFloatBuffer(4 * 4);
 	private FloatBuffer viewMatrixBuffer = BufferUtils.createFloatBuffer(4 * 4);
@@ -259,7 +259,7 @@ public class ObjLoader {
 
 	void update() {
 		projectionMatrix.setPerspective((float) Math.toRadians(fov), (float) width / height, 0.01f, 100.0f);
-		viewPosition.set(10f * (float) Math.cos(rotation), 10f, 10f * (float) Math.sin(rotation));
+		viewPosition.set(10f * (float) Math.cos(rotation), 2f, 10f * (float) Math.sin(rotation));
 		viewMatrix.setLookAt(viewPosition.x, viewPosition.y, viewPosition.z, 0f, 0f, 0f, 0f, 1f, 0f);
 	}
 
@@ -332,8 +332,8 @@ public class ObjLoader {
 	}
 
 	public static void main(String[] args) {
-		// new ObjLoader("blue").run();
-		// new ObjLoader("gouraud").run();
+//		 new ObjLoader("blue").run();
+//		 new ObjLoader("gouraud").run();
 		new ObjLoader("gouraud_lit").run();
 	}
 }
