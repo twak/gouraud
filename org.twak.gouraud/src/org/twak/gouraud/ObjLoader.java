@@ -65,7 +65,7 @@ public class ObjLoader {
 	Matrix4f viewMatrix = new Matrix4f();
 	Matrix4f projectMatrix = new Matrix4f();
 	Vector3f viewPosition = new Vector3f();
-	Vector3f lightPosition = new Vector3f(-5f, 0f, 0f);
+	Vector3f lightPosition = new Vector3f(10f, 5f, 10f);
 
 	private FloatBuffer modelMatrixBuffer = BufferUtils.createFloatBuffer(4 * 4);
 	private FloatBuffer viewMatrixBuffer = BufferUtils.createFloatBuffer(4 * 4);
@@ -188,7 +188,7 @@ public class ObjLoader {
 	}
 
 	void loadModel() {
-		String fileName = "C:\\Users\\twak\\Desktop\\magnet.obj";
+		String fileName = "C:\\Users\\twak\\Desktop\\sphere.obj";
 		File file = new File(fileName);
 		AIScene scene = aiImportFile(file.getAbsolutePath(), aiProcess_JoinIdenticalVertices | aiProcess_Triangulate);
 		
@@ -288,6 +288,10 @@ public class ObjLoader {
 
 			normalMatrix.set(modelMatrix).invert().transpose();
 
+//			Matrix4f m = new Matrix4f(modelMatrix);
+//			m.mul(viewMatrix);
+//			normalMatrix.set(m).invert().transpose();
+			
 			glUniformMatrix3fvARB(normalMatrixUniform, false, normalMatrix.get(normalMatrixBuffer));
 
 			if (lightPositionUniform != GL_NO_ERROR)

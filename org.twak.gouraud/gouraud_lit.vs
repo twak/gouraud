@@ -19,15 +19,11 @@ void main() {
     gl_Position = uProjectionMatrix * viewPosition;
     
     vec4 viewDir = normalize ( viewPosition );
-    vec4 vNormal = vec4 ( uNormalMatrix * aNormal, 1);
+    vec4 normal = vec4 ( uNormalMatrix * aNormal, 1);
     vec4 lightPosition = uModelMatrix * vec4 ( uLightPosition, 1);
-    vec4 lightDirection = normalize( lightPosition - viewPosition);
-    float diffuseCo = dot ( lightDirection, vNormal );
+    vec4 lightDirection = normalize( lightPosition - modelPosition);
+    float diffuseCo = dot ( lightDirection, normal );
     vec4 diffuse = diffuseCo * vec4 (1,0,0, 1);
-    
-    vec3 H = normalize (lightDirection.xyz + viewDir.xyz);
-    float specularCo = pow(max(0.0, dot(vNormal.xyz, H)), 3);
-    vec4 specular = specularCo * vec4 (1,1,1,1);
-    
-    vColour = diffuse + specular;
+
+  	vColour = diffuse;  
 }
